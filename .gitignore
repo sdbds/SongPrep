@@ -28,3 +28,6 @@ MANIFEST
 
 # IOS
 .DS_Store
+
+huggingface
+SongPrep-7B

@@ -1,10 +1,14 @@
 import argparse
 import torch
 import torchaudio
+import ffmpeg
 import numpy as np
 from transformers import AutoModelForCausalLM
 from megatron.tokenizer import build_tokenizer
 from mucodec.generate_1rvq import Tango
+from tqdm import tqdm
+from pathlib import Path
+import re
 
 
 class Args:
@@ -26,22 +30,28 @@ class megaInf:
             model_path,
             trust_remote_code=True,
             torch_dtype=torch.bfloat16,
-            attn_implementation="flash_attention_2"
-            ).to("cuda")
+            attn_implementation="flash_attention_2",
+            device_map="auto",
+            low_cpu_mem_usage=True,
+            )
 
     def run(self, audio):
         audio = np.array(audio.to("cpu")).astype(np.int32) + self.text_offset
         sentence_ids = [self.tokenizer.sep_token_id] + audio.tolist() + [self.tokenizer.tokenizer.sep_token_id]
         
         prompt = torch.LongTensor(sentence_ids).to("cuda").unsqueeze(0)
-        generate_ids = self.model.generate(prompt, do_sample=True, 
-                                           top_p=0.1,
-                                           temperature=0.1, 
-                                           num_return_sequences=1,
-                                           eos_token_id=self.tokenizer.eos_token_id, 
-                                           pad_token_id=self.tokenizer.pad_token_id,
-                                           max_length=8192,
-                                           ).squeeze(0).cpu().numpy()
+        
+        # use tqdm show progress
+        with tqdm(total=1, desc="Transcribing", unit="song") as pbar:
+            generate_ids = self.model.generate(prompt, do_sample=True, 
+                                               top_p=0.1,
+                                               temperature=0.1, 
+                                               num_return_sequences=1,
+                                               eos_token_id=self.tokenizer.eos_token_id, 
+                                               pad_token_id=self.tokenizer.pad_token_id,
+                                               max_length=8192,
+                                               ).squeeze(0).cpu().numpy()
+            pbar.update(1)
 
         # import pdb; pdb.set_trace()
         indices = (generate_ids == self.tokenizer.sep_token_id).nonzero()[0]
@@ -70,9 +80,15 @@ if __name__ == "__main__":
 
     # codec
     tango = Tango(model_path=codec_path, ssl_path=ssl_path)
-    src_wave, fs = torchaudio.load(wav_path)
-    if (fs != 48000):
-        src_wave = torchaudio.functional.resample(src_wave, fs, 48000)
+    # use ffmpeg read audio and resample to 48000
+    out, _ = (
+        ffmpeg
+        .input(wav_path)
+        .output('-', format='f32le', acodec='pcm_f32le', ac=1, ar=48000)
+        .run(capture_stdout=True, capture_stderr=True)
+    )
+    src_wave = torch.from_numpy(np.frombuffer(out, np.float32)).unsqueeze(0)
+    fs = 48000
     code = tango.sound2code(src_wave)
     del tango
     torch.cuda.empty_cache()
@@ -80,5 +96,18 @@ if __name__ == "__main__":
     # transcription
     maga = megaInf(qwen_path, vocal_file)
     lyric = maga.run(code[0][0])
-    print(lyric)
+    
+    # save lyric to same name txt file
+    wav_path_obj = Path(wav_path)
+    wav_dir = wav_path_obj.parent
+    wav_name = wav_path_obj.stem
+    txt_path = wav_dir / f"{wav_name}.txt"
+    # format lyric, add newline
+    formatted_lyric = lyric.replace(" ; ", ";\n").replace("]", "]\n")
+    # add newline after period in English
+    formatted_lyric = re.sub(r'([a-zA-Z])\.', r'\1.\n', formatted_lyric).strip()
+    print(formatted_lyric)
+    with open(txt_path, 'w', encoding='utf-8') as f:
+        f.write(formatted_lyric)
+    print(f"Lyric saved to: {txt_path}")
     
