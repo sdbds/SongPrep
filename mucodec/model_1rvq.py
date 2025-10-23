@@ -116,11 +116,8 @@ class PromptCondAudioDiffusion(nn.Module):
         self.rsp48toclap = torchaudio.transforms.Resample(48000, 24000)
         self.rsq48towav2vec = torchaudio.transforms.Resample(48000, 16000)
         self.bestrq = MusicFMModel(MusicFMConfig())
-        bestrq_weights = torch.load(ssl_path, map_location='cpu')["model"]
-        self.bestrq.load_state_dict(bestrq_weights, strict=False)
         self.rsq48tobestrq = torchaudio.transforms.Resample(48000, 24000)
         self.rsq48tohubert = torchaudio.transforms.Resample(48000, 16000)
-        for v in self.bestrq.parameters():v.requires_grad = False
         self.rvq_bestrq_emb = ResidualVectorQuantize(input_dim = 1024, n_codebooks = 1, codebook_size = 16_384, codebook_dim = 32, quantizer_dropout = 0.0, stale_tolerance=200)
         for v in self.rvq_bestrq_emb.parameters():v.requires_grad = False
 

@@ -36,7 +36,6 @@ class Tango:
         
         self.model.eval()
         self.model.init_device_dtype(torch.device(device), torch.float32)
-        print("scaling factor: ", self.model.normfeat.std)
 
     @torch.no_grad()
     @torch.autocast(device_type="cuda", dtype=torch.float32)
