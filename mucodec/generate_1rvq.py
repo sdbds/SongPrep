@@ -9,7 +9,6 @@ from mucodec.model_1rvq import PromptCondAudioDiffusion
 class Tango:
     def __init__(self, \
         model_path, \
-        ssl_path,
         layer_num=6, \
         device="cuda:0"):
         
@@ -24,7 +23,6 @@ class Tango:
             "unet_model_name":None,
             "unet_model_config_path":"configs/models/transformer2D_wocross_inch112_1x4_multi_large.json",
             "snr_gamma":None,
-            "ssl_path":ssl_path,
         }
         self.model = PromptCondAudioDiffusion(**main_config).to(device)
         if model_path.endswith(".safetensors"):

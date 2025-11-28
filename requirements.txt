@@ -6,3 +6,4 @@ torchaudio==2.6.0
 torchvision==0.21.0
 transformers==4.56.1
 wheel>=0.45.1
+vllm==0.8.5

@@ -26,7 +26,7 @@ class megaInf:
             model_path,
             trust_remote_code=True,
             torch_dtype=torch.bfloat16,
-            attn_implementation="flash_attention_2"
+            # attn_implementation="flash_attention_2"
             ).to("cuda")
 
     def run(self, audio):
@@ -58,18 +58,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("-i", dest="input_wav")
     parser.add_argument("-q", dest="qwen_ckpt", default="SongPrep-7B/")
-    parser.add_argument("-s", dest="ssl_ckpt", default="SongPrep-7B/muencoder.pt")
     parser.add_argument("-c", dest="codec_ckpt", default="SongPrep-7B/mucodec.safetensors")
     args = parser.parse_args()
 
     vocal_file = "conf/vocab_type.yaml"
     qwen_path = args.qwen_ckpt
     codec_path = args.codec_ckpt
-    ssl_path = args.ssl_ckpt
     wav_path = args.input_wav
 
     # codec
-    tango = Tango(model_path=codec_path, ssl_path=ssl_path)
+    tango = Tango(model_path=codec_path)
     src_wave, fs = torchaudio.load(wav_path)
     if (fs != 48000):
         src_wave = torchaudio.functional.resample(src_wave, fs, 48000)

@@ -94,7 +94,6 @@ class PromptCondAudioDiffusion(nn.Module):
         hubert_layer=None,
         ssl_layer=None,
         uncondition=True,
-        ssl_path=None,
     ):
         super().__init__()
 
