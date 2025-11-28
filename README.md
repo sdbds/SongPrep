@@ -49,7 +49,7 @@ The complete output may look like:
 ```bash
 python3 run.py -i your_wav_dir
 ```
-```
+
 The complete output may look like:
 ```bash
 =====wav_name=====
