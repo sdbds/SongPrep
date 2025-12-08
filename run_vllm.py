@@ -10,6 +10,7 @@ from vllm.engine.llm_engine import LLMEngine
 Processor._validate_model_input = lambda *args, **kwargs: None
 LLMEngine._validate_token_prompt = lambda *args, **kwargs: None
 
+from vllm import __version__ as vllm_version
 from vllm import LLM, SamplingParams
 from megatron.tokenizer import build_tokenizer
 from mucodec.generate_1rvq import Tango
@@ -53,10 +54,20 @@ class vllmInf:
             temperature=0.1
         )
 
-        outputs = self.llm.generate(
-            prompt_token_ids=batch_token_ids,
-            sampling_params=sampling_params
-        )
+        if vllm_version == "0.8.5":
+            outputs = self.llm.generate(
+                prompt_token_ids=batch_token_ids,
+                sampling_params=sampling_params
+            )
+        else:
+            inputs = [
+                {"prompt_token_ids": token_ids}
+                for token_ids in batch_token_ids
+            ]
+            outputs = self.llm.generate(
+                prompts=inputs,
+                sampling_params=sampling_params
+            )
 
         lyrics = []
         for output in outputs:
