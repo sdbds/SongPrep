@@ -9,7 +9,7 @@ import torchaudio
 from torch.cuda.amp import autocast
 
 from mucodec.descript_quantize3 import ResidualVectorQuantize
-from mucodec.our_MERT_BESTRQ.test import load_model
+from mucodec.our_MERT_BESTRQ.mert_fairseq.models.musicfm.musicfm_model import MusicFMModel, MusicFMConfig
 
 
 class SampleProcessor(torch.nn.Module):
@@ -94,7 +94,6 @@ class PromptCondAudioDiffusion(nn.Module):
         hubert_layer=None,
         ssl_layer=None,
         uncondition=True,
-        ssl_path=None,
     ):
         super().__init__()
 
@@ -115,15 +114,9 @@ class PromptCondAudioDiffusion(nn.Module):
         self.num_samples_perseg = self.sample_rate * 20 // 1000
         self.rsp48toclap = torchaudio.transforms.Resample(48000, 24000)
         self.rsq48towav2vec = torchaudio.transforms.Resample(48000, 16000)
-        # self.wav2vec = Wav2Vec2BertModel.from_pretrained("facebook/w2v-bert-2.0", trust_remote_code=True)
-        # self.wav2vec_processor = AutoFeatureExtractor.from_pretrained("facebook/w2v-bert-2.0", trust_remote_code=True)
-        self.bestrq = load_model(
-            model_dir='mucodec/our_MERT_BESTRQ/mert_fairseq', # path/to/our-MERT/mert_fairseq
-            checkpoint_dir=ssl_path,
-        )
+        self.bestrq = MusicFMModel(MusicFMConfig())
         self.rsq48tobestrq = torchaudio.transforms.Resample(48000, 24000)
         self.rsq48tohubert = torchaudio.transforms.Resample(48000, 16000)
-        for v in self.bestrq.parameters():v.requires_grad = False
         self.rvq_bestrq_emb = ResidualVectorQuantize(input_dim = 1024, n_codebooks = 1, codebook_size = 16_384, codebook_dim = 32, quantizer_dropout = 0.0, stale_tolerance=200)
         for v in self.rvq_bestrq_emb.parameters():v.requires_grad = False
 
@@ -159,7 +152,6 @@ class PromptCondAudioDiffusion(nn.Module):
         return input_audios/norm_value.unsqueeze(-1)
 
     def extract_bestrq_embeds(self, input_audio_0,input_audio_1,layer):
-        self.bestrq.eval()
         # print("audio shape:",input_audio_0.shape)
         input_wav_mean = (input_audio_0 + input_audio_1) / 2.0
         # print("input_wav_mean.shape:",input_wav_mean.shape)

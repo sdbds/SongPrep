@@ -26,19 +26,12 @@ You can install the necessary dependencies using the `requirements.txt` file wit
 pip install -r requirements.txt
 ```
 
-If your Python<=3.9, you can use pip to install fairseq,
-```bash
-pip install fairseq==0.12.2 --no-deps
-```
-else it is recommended to install it on wheels. For example Python==3.11 can use [liyaodev/fairseq](https://github.com/liyaodev/fairseq/releases/tag/v0.12.3.1)；
-```bash
-pip3 install fairseq-0.12.3.1-cp311-cp311-linux_x86_64.whl
-```
-
 ## Usage
 To ensure the model runs correctly, please **download the weight** from the original source at [Hugging Face](https://huggingface.co/waytan22/SongPrep-7B), and save it into **root directory** of the project.
 
 Once everything is set up, you can run the inference script using the following command:
+
+### With transformers
 ```bash
 python3 run.py -i your_wav_path
 ```
@@ -50,6 +43,24 @@ The complete output may look like:
 - The **structure** is the label from structure analysis for the segment.
 - The **start** and **end** are the segment’s start and end times.
 - The lyric is the recognized lyrics, where sentences separated by '.'.
+
+
+### With vllm
+```bash
+python3 run.py -i your_wav_dir
+```
+
+The complete output may look like:
+```bash
+=====wav_name=====
+[structure][start:end]lyric ; [structure][start:end]lyric ; [structure][start:end]lyric
+
+=====wav_name=====
+[structure][start:end]lyric ; [structure][start:end]lyric ; [structure][start:end]lyric
+
+=====wav_name=====
+[structure][start:end]lyric ; [structure][start:end]lyric ; [structure][start:end]lyric
+```
 
 ## Citation
 ```

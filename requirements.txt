@@ -16,3 +16,4 @@ editables
 huggingface_hub[hf_xet]>=0.35.2
 ffmpeg-python
 accelerate
+#vllm==0.8.5

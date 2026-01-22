@@ -68,27 +68,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
     parser.add_argument("-i", dest="input_wav")
     parser.add_argument("-q", dest="qwen_ckpt", default="SongPrep-7B/")
-    parser.add_argument("-s", dest="ssl_ckpt", default="SongPrep-7B/muencoder.pt")
     parser.add_argument("-c", dest="codec_ckpt", default="SongPrep-7B/mucodec.safetensors")
     args = parser.parse_args()
 
     vocal_file = "conf/vocab_type.yaml"
     qwen_path = args.qwen_ckpt
     codec_path = args.codec_ckpt
-    ssl_path = args.ssl_ckpt
     wav_path = args.input_wav
 
     # codec
-    tango = Tango(model_path=codec_path, ssl_path=ssl_path)
-    # use ffmpeg read audio and resample to 48000
-    out, _ = (
-        ffmpeg
-        .input(wav_path)
-        .output('-', format='f32le', acodec='pcm_f32le', ac=1, ar=48000)
-        .run(capture_stdout=True, capture_stderr=True)
-    )
-    src_wave = torch.from_numpy(np.frombuffer(out, np.float32)).unsqueeze(0)
-    fs = 48000
+    tango = Tango(model_path=codec_path)
+    src_wave, fs = torchaudio.load(wav_path)
+    if (fs != 48000):
+        src_wave = torchaudio.functional.resample(src_wave, fs, 48000)
     code = tango.sound2code(src_wave)
     del tango
     torch.cuda.empty_cache()
